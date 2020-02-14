@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+
+
+
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title> Connexion</title>
+
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/assets/styleconnexion.css">
+    <link rel="icon" href="/uploads/images/favicon.ico"/>
+
+</head>
+
+
+
+
+
+<body id="connexion">
+
+<br>
+<br>
+<br>
+<div class="grid">
+    <center><a href="/" ><img src="/assets/images/logo.svg"></a></center>
+    <br>
+    </div>
+<div class="content">
+    <div class="container">
+        <p>{{ session.errconnexion }}</p>
+        <div class="menu">
+            <a href="login" class="btn-connexion">
+                <h2>Administrateur</h2>
+            </a>
+
+        </div>
+
+        <div class="connexion">
+
+            <form class="contact-form" name="connexion" method="post"  action="/Admin">
+
+                <label>Email</label>
+
+                <input name="email" placeholder="" type="text">
+
+
+                <label>Mot de passe</label>
+
+                <input name="password" placeholder="" type="password">
+
+                <br>
+                <br>
+                <br>
+                <br>
+                <!-- Captcha -->
+
+                    <input class="submit" value="login" type="submit">
+                </form>
+                </body>
+                <!-- -->
+
+            </form>
+
+            <hr>
+
+
+        </div>
+
+
+
+    </div>
+
+
+</body>
+
+
+
+
+</html>

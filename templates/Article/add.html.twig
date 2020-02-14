@@ -1,0 +1,38 @@
+{% extends "/Article/Accueil.html.twig" %}
+{% block title %}{{ parent() }} - Ajout d'un article {% endblock %}
+
+{% block body %}
+
+    <nav>
+        <div class="menu">
+            <ul>
+                <li>
+                    <a href="/User/{{ session.login.id }}"><i class="fa fa-user-circle-o" aria-hidden="true"></i></a>
+                </li>
+
+
+                <li>
+
+                    <img src="/uploads/images/logo.png">
+
+                </li>
+                <li>
+                    <a href="/chat"><i class="fa fa-envelope" aria-hidden="true"></i></a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+
+    <div class="wrapper">
+
+                <div class="profile-card-inf">
+                    <div class="profile-card-inf__item">
+                        <div class="profile-card-inf__title">Aucune personne à proximité</div>
+
+                    </div>
+                </div>
+
+
+
+{% endblock %}
