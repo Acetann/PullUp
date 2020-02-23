@@ -10,6 +10,7 @@ class Bdd {
         $username="193283";
         $password="59nathan494";
         $dbname="mamie-a-jour_pullup";
+
         try
         {
            self::$_instance = new PDO('mysql:host='.$hostname.';dbname='.$dbname.';charset=utf8', $username, $password);

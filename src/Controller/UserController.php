@@ -15,55 +15,12 @@ class UserController extends  AbstractController
         return $this->twig->render('User/login.html.twig');
     }
 
-    public function AdminForm3()
-    {
-        unset($_SESSION['errorlogin']);
-        return $this->twig->render('Article/Admin.html.twig');
+    public function Accueil(){
+        return $this->twig->render('User/index.html.twig');
     }
 
-    public function AdminForm2()
-    {
-        unset($_SESSION['errorlogin']);
-        return $this->twig->render('User/login2.html.twig');
-    }
-
-    public function AdminCheck2(){
-
-        if(!filter_var(
-            $_POST['password'],
-            FILTER_VALIDATE_REGEXP,
-            array(
-                "options" => array("regexp"=>"/[a-zA-Z]{3,}/")
-            )
-        )){
-            $_SESSION['errorlogin'] = "Mpd mini 3 caractères";
-            header('Location:/Login2');
-            return;
-        }
-
-        if(!filter_var($_POST['email'],FILTER_VALIDATE_EMAIL)){
-            $_SESSION['errorlogin'] = "Mail invalide";
-            header('Location:/Login2');
-            return;
-        }
-
-        if($_POST["email"]=="admin@admin.com"
-            AND $_POST["password"] == "password"
-        ){
-
-            $_SESSION['login'] = array(
-                'Nom' => 'Administrateur'
-            ,'Prénom' => 'Sylvain'
-            ,'roles' => array('admin', 'redacteur')
-            );
-            header('Location:/Admin2');
-        }else{
-            $_SESSION['errorlogin'] = "Erreur Authent.";
-            header('Location:/Login');
-        }
-
-
-
+    public function welcome(){
+        return $this->twig->render('Article/Accueil.html.twig');
     }
 
     public function inscriptionForm()
@@ -117,7 +74,22 @@ class UserController extends  AbstractController
             return;
         }
 
-      
+      // Test du Captcha
+        // Ma clé privée
+        $secret = "6LcNR9YUAAAAANj9aeQhzcPHWc8pxjYlkQ63lhBy";
+        // Paramètre renvoyé par le recaptcha
+        $response = $_POST['g-recaptcha-response'];
+        // On récupère l'adresse IP de l'utilisateur
+        $remoteip = $_SERVER['REMOTE_ADDR'];
+
+        $api_url = "https://www.google.com/recaptcha/api/siteverify?secret="
+            . $secret
+            . "&response=" . $response
+            . "&remoteip=" . $remoteip ;
+
+        $decode = json_decode(file_get_contents($api_url), true);
+      //---
+
         $options = [
             'salt' => md5(strtolower($_POST['email'])),
             'cost' => 12 // the default cost is 10
@@ -127,16 +99,18 @@ class UserController extends  AbstractController
         $user = new User();
         $userInfoLog = $user->SqlGetLogin(Bdd::GetInstance(), ($_POST['email']));
         $pwd_hashed_bdd = $userInfoLog['USER_PASSWORD'];
-        if ($pwd_hashed_entry == $pwd_hashed_bdd) {
+
+        if ($pwd_hashed_entry == $pwd_hashed_bdd and $decode['success'] == true) {
             $arrayRole = explode(" ", $userInfoLog['USER_ROLE']);
             $_SESSION['login'] = array("id" => $userInfoLog['USER_ID'],
                 "roles" => $arrayRole,
-                "status" => $userInfoLog['USER_STATUS'],
+                "projet" => $userInfoLog['USER_PROJET'],
                 "prenom" => $userInfoLog['USER_PRENOM'],
                 "email" => $userInfoLog['USER_EMAIL'],
                 "nom" => $userInfoLog['USER_NOM'],
                 "role" => $userInfoLog['USER_ROLE'],
-                "valider" => $userInfoLog['USER_VALIDER']);
+                "valider" => $userInfoLog['USER_VALIDER'],
+                "like" => $userInfoLog['USER_LIKE']);
 
             return $this->twig->render('Article/Accueil.html.twig');
 
@@ -148,6 +122,8 @@ class UserController extends  AbstractController
     }
 
 
+
+    //Roles utilisateurs : administrateur ou redacteur
     public static function roleNeed($roleATester)
     {
         if (isset($_SESSION['login'])) {
@@ -161,7 +137,7 @@ class UserController extends  AbstractController
         }
     }
 
-    //permet de visualiser les utilisateurs
+    //permet de visualiser les utilisateurs non validé
     public function AfficherUtilisateur(){
         $utilisateur = new User();
         $listUtilisateur = $utilisateur->SqlUtilisateur(Bdd::GetInstance());
@@ -169,6 +145,7 @@ class UserController extends  AbstractController
         return $this->twig->render('User/Utilisateur.html.twig',['utilisateurlist' => $listUtilisateur]);
     }
 
+    //permet de visualiser les utilisateurs validé
     public function Affichertlm(){
         $utilisateur = new User();
         $listUtilisateur = $utilisateur->Sqltlm(Bdd::GetInstance());
@@ -176,21 +153,52 @@ class UserController extends  AbstractController
         return $this->twig->render('User/ListUtilisateur.html.twig',['utilisateurlist' => $listUtilisateur]);
     }
 
+    public function AfficheMatch(){
+        $utilisateur = new User();
+        $listUtilisateur = $utilisateur->Matchtlm(Bdd::GetInstance());
+
+        return $this->twig->render('User/Matching.html.twig',['utilisateurlist' => $listUtilisateur]);
+    }
+
+    public function AfficherMatch(){
+        $utilisateur = new User();
+        $listUtilisateur = $utilisateur->SqlPersonne(Bdd::GetInstance());
+
+        return $this->twig->render('User/Match.html.twig',['utilisateurlist' => $listUtilisateur]);
+    }
+
+
+
     //Permet la validation d'un utilisateur
     public static function ValUtilisateur($id){
-        $Utilisateur = new User();
-        $Utilisateur->SQlValUtilisateur(Bdd::GetInstance(),$id);
+    $Utilisateur = new User();
+    $Utilisateur->SQlValUtilisateur(Bdd::GetInstance(),$id);
 
         header('Location:/Utilisateur');
     }
 
-    public function Edit()
+    // Permet de supprimer un utilisateur
+    public static function delUtilisateur($id){
+        $Utilisateur = new User();
+        $Utilisateur->SQldel(Bdd::GetInstance(),$id);
+
+        header('Location:/Utilisateur');
+    }
+
+    public static function listMatch($id){
+        $Utilisateur = new User();
+        $Utilisateur->SQlMatch(Bdd::GetInstance(),$id);
+
+        header('Location:/match');
+    }
+
+     public function Edit()
     {
         $id = $_SESSION["login"]["id"];
 
         if($_POST){
 
-            $Edit = (new User);
+            $Edit = new User;
 
             $Edit->setUSERNOM($_POST["nom"]);
             $Edit->setUSERPRENOM($_POST["prenom"]);
@@ -212,19 +220,24 @@ class UserController extends  AbstractController
             $utilisateur = new User();
             $datauser = $utilisateur->GetProfile(Bdd::GetInstance(), $id);
 
-            return $this->twig->render('User/edit.html.twig', [ 'utilisateur' => $datauser ]);
+            return $this->twig->render('User/readFile.html.twig', [ 'utilisateur' => $datauser ]);
         }
     }
 
 
-    public static function delUtilisateur($id){
+    public function Chercher()
+    {
+        // Moteur de recherche par mot clé
         $Utilisateur = new User();
-        $Utilisateur->SQldel(Bdd::GetInstance(),$id);
+        $MotCle = strip_tags($_POST['search']);
+        $listUtilisateur = $Utilisateur->SqlGetChercher(Bdd::GetInstance(), $MotCle);
 
-        header('Location:/Utilisateur');
+        return $this->twig->render(
+            'User/ListUtilisateur.html.twig',[
+            'utilisateurlist' => $listUtilisateur]);
     }
 
-    //fonction Inscription
+    //fonction Inscription utilisateur
     public function InscriptionCheck()
     {
         if ($_POST) {
@@ -291,40 +304,32 @@ class UserController extends  AbstractController
 
         }
 
-
-
-
         //fonction Deconnexion
-        public function logout()
+        public
+        function logout()
         {
             unset($_SESSION['login']);
             unset($_SESSION['errorlogin']);
 
-            return $this->twig->render('User/accueil.html.twig');
+            header('Location:/');
         }
 
-        //Afficher la page d'édition css
+        //Afficher le fichier test.css dans la page d'édition css
         public function readFile(){
             $file='test.css';
             $dataCss = file_get_contents('assets/'.$file);
 
             $Categorie = new Categorie();
             $listCategorie = $Categorie->SqlGetCateg(Bdd::GetInstance());
-            return $this->twig->render('User/edit.html.twig', [
+            return $this->twig->render('User/readFile.html.twig', [
                 //contenu du fichier css envoyé dans la vue
                 'cssFileData' => $dataCss
                 ,'listCat' => $listCategorie
             ]);
-
         }
 
-        //Afficher la page d'édition css
+        //Ecrit les modification CSS dans le fichier test.css
         public function writeFile(){
-
-        /*if((strip_tags($_POST['cssFileData']))!=($_POST['cssFileData'])){
-                $_SESSION['errorcsschange']="Ce code CSS n'est pas conforme";
-                header("location:/");
-            }*/
             $file='test.css';
             file_put_contents('assets/'.$file,$_POST['cssFileData']);
             header("location:/User");

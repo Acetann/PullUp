@@ -24,6 +24,7 @@ class User implements \JsonSerializable
     private $USERMOI;
     private $USERSITUATION;
     private $USERCHERCHE;
+    private $USERLIKE;
 
     /**
      * @return mixed
@@ -154,8 +155,8 @@ class User implements \JsonSerializable
     }
 
     /**
- * @return mixed
- */
+     * @return mixed
+     */
     public function getUSERPASSWORD()
     {
         return $this->USERPASSWORD;
@@ -314,8 +315,8 @@ class User implements \JsonSerializable
     }
 
     /**
-     * @return mixed
-     */
+ * @return mixed
+ */
     public function getUSERCHERCHE()
     {
         return $this->USERCHERCHE;
@@ -327,6 +328,22 @@ class User implements \JsonSerializable
     public function setUSERCHERCHE($USERCHERCHE)
     {
         $this->USERCHERCHE = $USERCHERCHE;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getUSERLIKE()
+    {
+        return $this->USERLIKE;
+    }
+
+    /**
+     * @param mixed $USERLIKE
+     */
+    public function setUSERLIKE($USERLIKE)
+    {
+        $this->USERLIKE = $USERLIKE;
     }
 
 
@@ -352,6 +369,7 @@ class User implements \JsonSerializable
             'usermoi' => $this->getUSERMOI(),
             'usersituation' => $this->getUSERSITUATION(),
             'usercherche' => $this->getUSERCHERCHE(),
+            'userlike' => $this->getUSERLIKE(),
         ];
     }
 
@@ -374,10 +392,53 @@ class User implements \JsonSerializable
         return $arrayUser;
     }
 
+    public function SqlPersonne(\PDO $bdd)
+    {
+        $query = $bdd->prepare('SELECT USER_ID, USER_PROJET, USER_NOM, USER_PRENOM FROM user where USER_LIKE = 0');
+        $query->execute();
+        $arrayUser = $query->fetchAll();
+        $listUser = [];
+        foreach ($arrayUser as $UserSQL){
+
+            $User = new User();
+            $User->setUSERID($UserSQL['USER_ID']);
+            $User->setUSERID($UserSQL['USER_PROJET']);
+            $User->setUSERNOM($UserSQL['USER_NOM']);
+            $User->setUSERPRENOM($UserSQL['USER_PRENOM']);
+
+            $listUser[] = $User;
+        }
+
+        return $arrayUser;
+    }
+
+
+
+    public function SqlGetChercher(\PDO $bdd,$MotCle){
+        // requete de recherche par mot clé dans titre
+        $requete = $bdd->prepare('SELECT * FROM user where USER_VALIDER = 1 and USER_PROJET LIKE :search');
+        $requete->execute(
+            ['search' => "%".$MotCle."%"]
+        );
+        $arrayUser = $requete->fetchAll();
+
+        $listUtilisateur = [];
+        foreach ($arrayUser as $UtilisateurSQL){
+            $Utilisateur = new User();
+            $Utilisateur->setUSERID($UtilisateurSQL['USER_ID']);
+            $Utilisateur->setUSERNOM($UtilisateurSQL["USER_NOM"]);
+            $Utilisateur->setUSERPRENOM($UtilisateurSQL["USER_PRENOM"]);
+            $Utilisateur->setUSERPROJET($UtilisateurSQL["USER_PROJET"]);
+
+            $listUtilisateur[] = $Utilisateur;
+        }
+        return $arrayUser;
+    }
+
 
     public function Sqltlm(\PDO $bdd)
     {
-        $query = $bdd->prepare('SELECT USER_ID, USER_PRENOM, USER_NOM FROM user where USER_VALIDER = 1');
+        $query = $bdd->prepare('SELECT USER_ID, USER_PRENOM, USER_NOM, USER_ROLE, USER_PROJET  FROM user where USER_VALIDER = 1');
         $query->execute();
         $arrayUser = $query->fetchAll();
         $listUser = [];
@@ -387,6 +448,28 @@ class User implements \JsonSerializable
             $User->setUSERID($UserSQL['USER_ID']);
             $User->setUSERNOM($UserSQL['USER_NOM']);
             $User->setUSERPRENOM($UserSQL['USER_PRENOM']);
+            $User->setUSERROLE($UserSQL['USER_ROLE']);
+            $User->setUSERPROJET($UserSQL['USER_PROJET']);
+
+
+            $listUser[] = $User;
+        }
+
+        return $arrayUser;
+    }
+
+    public function Matchtlm(\PDO $bdd)
+    {
+        $query = $bdd->prepare('SELECT USER_PRENOM, USER_NOM, USER_PROJET  FROM user where USER_LIKE = 1');
+        $query->execute();
+        $arrayUser = $query->fetchAll();
+        $listUser = [];
+        foreach ($arrayUser as $UserSQL){
+
+            $User = new User();
+            $User->setUSERNOM($UserSQL['USER_NOM']);
+            $User->setUSERPRENOM($UserSQL['USER_PRENOM']);
+            $User->setUSERPROJET($UserSQL['USER_PROJET']);
 
             $listUser[] = $User;
         }
@@ -401,34 +484,10 @@ class User implements \JsonSerializable
         ]);
     }
 
-
-    public function GetProfile(\PDO $bdd,$id)
-    {
-        $query = $bdd->prepare('SELECT * FROM user where USER_ID = :id');
-        $query->execute([
-            'id' => $id
-        ]);
-
-        return $query->fetch();
-    }
-    public function EditProfile(\PDO $bdd,$id)
-    {
-        $query = $bdd->prepare('update user set USER_NOM=:nom, USER_PRENOM=:prenom, USER_AGE=:age, USER_VILLE=:ville, USER_SEXE=:sexe, USER_PROJET=:projet, USER_DESC=:description, USER_CENTRE=:centre, USER_PROFESSION=:profession, USER_MOI=:moi, USER_SITUATION=:situation, USER_CHERCHE=:cherche where USER_ID = :id');
+    public function SQlMatch(\PDO $bdd,$id){
+        $query = $bdd->prepare('update user set USER_LIKE = 1 where USER_ID = :id');
         $query->execute([
             'id' => $id,
-            'nom' => $this->getUSERNOM(),
-            'prenom' => $this->getUSERPRENOM(),
-            'age' => $this->getUSERAGE(),
-            'ville' => $this->getUSERVILLE(),
-            'sexe' => $this->getUSERSEXE(),
-            'projet' => $this->getUSERPROJET(),
-            'description' => $this->getUSERDESC(),
-            'centre' => $this->getUSERCENTRE(),
-            'profession' => $this->getUSERPROFESSION(),
-            'moi' => $this->getUSERMOI(),
-            'situation' => $this->getUSERSITUATION(),
-            'cherche' => $this->getUSERCHERCHE(),
-
         ]);
     }
 
@@ -449,8 +508,6 @@ class User implements \JsonSerializable
             "email" => $this->getUSEREMAIL()
         ]);
     }
-
-
 
     public function Message(\PDO $bdd)
     {
@@ -476,8 +533,10 @@ class User implements \JsonSerializable
         return $emailUsers;
     }
 
+
+
     public function SqlGetLogin(\PDO $bdd , $emailuser){
-        $query = $bdd->prepare('SELECT USER_PASSWORD,USER_ROLE, USER_EMAIL,USER_NOM, USER_PRENOM, USER_STATUS, USER_ID, USER_VALIDER FROM user WHERE USER_EMAIL = :useremail');
+        $query = $bdd->prepare('SELECT USER_PASSWORD,USER_ROLE, USER_EMAIL,USER_NOM, USER_PRENOM, USER_PROJET, USER_ID, USER_VALIDER, USER_LIKE FROM user WHERE USER_EMAIL = :useremail');
         $query->execute([
             'useremail' => $emailuser
 
@@ -489,15 +548,45 @@ class User implements \JsonSerializable
         $user->setUSERID($UserInfoLog['USER_ID']);
         $user->setUSERNOM($UserInfoLog["USER_NOM"]);
         $user->setUSERPRENOM($UserInfoLog["USER_PRENOM"]);
-        $user->setUSERSTATUS($UserInfoLog["USER_STATUS"]);
+        $user->setUSERPROJET($UserInfoLog["USER_PROJET"]);
         $user->setUSERROLE($UserInfoLog["USER_ROLE"]);
-
+        $user->setUSERLIKE($UserInfoLog["USER_LIKE"]);
 
         $UserInfoLog[] = $user;
 
         return $UserInfoLog;
     }
 
+    public function EditProfile(\PDO $bdd,$id)
+    {
+        $query = $bdd->prepare('update user set USER_NOM=:nom, USER_PRENOM=:prenom, USER_AGE=:age, USER_VILLE=:ville, USER_SEXE=:sexe, USER_PROJET=:projet, USER_DESC=:description, USER_CENTRE=:centre, USER_PROFESSION=:profession, USER_MOI=:moi, USER_SITUATION=:situation, USER_CHERCHE=:cherche where USER_ID = :id');
+        $query->execute([
+            'id' => $id,
+            'nom' => $this->getUSERNOM(),
+            'prenom' => $this->getUSERPRENOM(),
+            'age' => $this->getUSERAGE(),
+            'ville' => $this->getUSERVILLE(),
+            'sexe' => $this->getUSERSEXE(),
+            'projet' => $this->getUSERPROJET(),
+            'description' => $this->getUSERDESC(),
+            'centre' => $this->getUSERCENTRE(),
+            'profession' => $this->getUSERPROFESSION(),
+            'moi' => $this->getUSERMOI(),
+            'situation' => $this->getUSERSITUATION(),
+            'cherche' => $this->getUSERCHERCHE(),
+
+        ]);
+    }
+
+    public function GetProfile(\PDO $bdd,$id)
+    {
+        $query = $bdd->prepare('SELECT * FROM user where USER_ID = :id');
+        $query->execute([
+            'id' => $id
+        ]);
+
+        return $query->fetch();
+    }
 
 }
 
